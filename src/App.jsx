@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import TaskList from './components/TaskList';
 import TaskModal from './components/TaskModal';
 import Confetti from './components/Confetti';
+import Statitics from './components/Statistics';
 
 // Một số công việc mẫu để người dùng không cảm thấy ứng dụng trống trải khi mở lần đầu
 const DEFAULT_TASKS = [
