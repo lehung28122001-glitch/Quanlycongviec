@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, ClipboardList, CheckCircle2, Clock, AlertCircle, Sparkles } from 'lucide-react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import TaskList from './components/TaskList';
 import TaskModal from './components/TaskModal';
 import Confetti from './components/Confetti';
+import LoginPage from './components/LoginPage';
+import RegisterPage from './components/RegisterPage';
 
 // Một số công việc mẫu để người dùng không cảm thấy ứng dụng trống trải khi mở lần đầu
 const DEFAULT_TASKS = [
@@ -85,8 +88,70 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState(null);
 
-  // State tạo pháo hoa
+  // State người dùng đã đăng nhập
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('focustask_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
   const [confettiTrigger, setConfettiTrigger] = useState(null);
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('focustask_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('focustask_user');
+    }
+  }, [user]);
+
+  const validateAuthData = ({ username, password }) => {
+    if (!username.trim() || !password.trim()) {
+      return { valid: false, message: 'Username và password không được để trống.' };
+    }
+    return { valid: true };
+  };
+
+  const handleLogin = ({ username, password }) => {
+    const validation = validateAuthData({ username, password });
+    if (!validation.valid) {
+      return { success: false, message: validation.message };
+    }
+
+    const savedUsers = JSON.parse(localStorage.getItem('focustask_users') || '[]');
+    const matchedUser = savedUsers.find(
+      (item) => item.username === username && item.password === password
+    );
+
+    if (!matchedUser) {
+      return { success: false, message: 'Tên đăng nhập hoặc mật khẩu không chính xác.' };
+    }
+
+    setUser({ username });
+    return { success: true };
+  };
+
+  const handleRegister = ({ username, password }) => {
+    const validation = validateAuthData({ username, password });
+    if (!validation.valid) {
+      return { success: false, message: validation.message };
+    }
+
+    const savedUsers = JSON.parse(localStorage.getItem('focustask_users') || '[]');
+    const existingUser = savedUsers.find((item) => item.username === username);
+
+    if (existingUser) {
+      return { success: false, message: 'Username đã tồn tại. Vui lòng chọn tên khác.' };
+    }
+
+    const newUser = { username, password };
+    localStorage.setItem('focustask_users', JSON.stringify([...savedUsers, newUser]));
+    setUser({ username });
+    return { success: true };
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+  };
 
   // Đồng bộ theme
   useEffect(() => {
@@ -244,7 +309,7 @@ export default function App() {
     setSearchQuery('');
   };
 
-  return (
+  const appLayout = (
     <div className="app-layout">
       {/* Sidebar chứa Pomodoro và Lọc */}
       <Sidebar
@@ -264,16 +329,25 @@ export default function App() {
               Bảng công việc <Sparkles size={22} style={{ color: 'var(--accent-primary)' }} />
             </h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-              Chào mừng bạn! Quản lý công việc hiệu quả mỗi ngày.
+              Chào {user?.username || 'bạn'}! Quản lý công việc hiệu quả mỗi ngày.
             </p>
           </div>
-          <button 
-            className="btn btn-primary"
-            onClick={() => { setTaskToEdit(null); setIsModalOpen(true); }}
-            style={{ height: '40px', display: 'flex', alignItems: 'center' }}
-          >
-            <Plus size={18} /> Thêm công việc
-          </button>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={handleLogout}
+              style={{ height: '40px' }}
+            >
+              Đăng xuất
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={() => { setTaskToEdit(null); setIsModalOpen(true); }}
+              style={{ height: '40px', display: 'flex', alignItems: 'center' }}
+            >
+              <Plus size={18} /> Thêm công việc
+            </button>
+          </div>
         </div>
 
         {/* Dashboard Stats */}
@@ -405,5 +479,15 @@ export default function App() {
       {/* Hiệu ứng pháo hoa khi hoàn thành công việc */}
       <Confetti trigger={confettiTrigger} />
     </div>
+  );
+
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+      <Route path="/register" element={<RegisterPage onRegister={handleRegister} />} />
+      <Route path="/app" element={user ? appLayout : <Navigate replace to="/login" />} />
+      <Route path="/" element={user ? <Navigate replace to="/app" /> : <Navigate replace to="/login" />} />
+      <Route path="*" element={<Navigate replace to={user ? '/app' : '/login'} />} />
+    </Routes>
   );
 }
