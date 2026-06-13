@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, ClipboardList, CheckCircle2, Clock, AlertCircle, Sparkles } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import TaskList from './components/TaskList';
 import TaskModal from './components/TaskModal';
 import Confetti from './components/Confetti';
-import Statitics from './components/Statistics';
+import AuthScreen from './components/AuthScreen';
 
 // Một số công việc mẫu để người dùng không cảm thấy ứng dụng trống trải khi mở lần đầu
 const DEFAULT_TASKS = [
@@ -64,10 +64,22 @@ const DEFAULT_TASKS = [
 ];
 
 export default function App() {
-  // Khởi tạo state tasks từ localStorage hoặc dùng tasks mẫu
+  // Khởi tạo người dùng hiện tại từ localStorage
+  const [currentUser, setCurrentUser] = useState(() => {
+    return localStorage.getItem('focustask_currentUser') || '';
+  });
+
+  // Khởi tạo state tasks từ localStorage dựa theo currentUser
   const [tasks, setTasks] = useState(() => {
-    const saved = localStorage.getItem('focustask_tasks');
-    return saved ? JSON.parse(saved) : DEFAULT_TASKS;
+    const activeUser = localStorage.getItem('focustask_currentUser');
+    if (activeUser) {
+      const users = JSON.parse(localStorage.getItem('focustask_users')) || [];
+      const user = users.find(u => u.username.toLowerCase() === activeUser.toLowerCase());
+      if (user && user.tasks && user.tasks.length > 0) {
+        return user.tasks;
+      }
+    }
+    return DEFAULT_TASKS;
   });
 
   // Khởi tạo theme (mặc định tối 'dark')
@@ -102,10 +114,40 @@ export default function App() {
     localStorage.setItem('focustask_theme', theme);
   }, [theme]);
 
-  // Đồng bộ tasks vào LocalStorage khi có thay đổi
+  // Đồng bộ tasks vào LocalStorage cho user hiện tại khi có thay đổi
   useEffect(() => {
-    localStorage.setItem('focustask_tasks', JSON.stringify(tasks));
-  }, [tasks]);
+    if (currentUser) {
+      const users = JSON.parse(localStorage.getItem('focustask_users')) || [];
+      const updatedUsers = users.map((u) => {
+        if (u.username.toLowerCase() === currentUser.toLowerCase()) {
+          return { ...u, tasks };
+        }
+        return u;
+      });
+      localStorage.setItem('focustask_users', JSON.stringify(updatedUsers));
+    }
+  }, [tasks, currentUser]);
+
+  const handleLoginSuccess = (username) => {
+    setCurrentUser(username);
+    localStorage.setItem('focustask_currentUser', username);
+    
+    const users = JSON.parse(localStorage.getItem('focustask_users')) || [];
+    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    if (user && user.tasks && user.tasks.length > 0) {
+      setTasks(user.tasks);
+    } else {
+      setTasks(DEFAULT_TASKS);
+    }
+  };
+
+  const handleLogout = () => {
+    if (window.confirm('Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này?')) {
+      setCurrentUser('');
+      localStorage.removeItem('focustask_currentUser');
+      setTasks([]);
+    }
+  };
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -245,6 +287,10 @@ export default function App() {
     setSearchQuery('');
   };
 
+  if (!currentUser) {
+    return <AuthScreen onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <div className="app-layout">
       {/* Sidebar chứa Pomodoro và Lọc */}
@@ -254,6 +300,8 @@ export default function App() {
         tasks={tasks}
         theme={theme}
         toggleTheme={toggleTheme}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* Nội dung chính bên phải */}

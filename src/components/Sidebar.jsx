@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { 
   CheckSquare, 
   TrendingUp, 
@@ -6,7 +6,8 @@ import {
   Moon, 
   Layers, 
   Briefcase, 
-  User
+  User,
+  LogOut
 } from 'lucide-react';
 
 const CATEGORIES = [
@@ -20,7 +21,9 @@ export default function Sidebar({
   setActiveCategory, 
   tasks, 
   theme, 
-  toggleTheme 
+  toggleTheme,
+  currentUser,
+  onLogout
 }) {
   // Tính toán số lượng task cho từng category
   const getCategoryCount = (categoryId) => {
@@ -116,6 +119,27 @@ export default function Sidebar({
             );
           })}
         </div>
+      </div>
+
+      {/* User Profile Section */}
+      <div className="sidebar-user">
+        <div className="user-info">
+          <div className="user-avatar" title={currentUser}>
+            {currentUser ? currentUser.charAt(0) : 'U'}
+          </div>
+          <div className="user-details">
+            <span className="user-name" title={currentUser}>{currentUser}</span>
+            <span className="user-role">Thành viên</span>
+          </div>
+        </div>
+        <button 
+          onClick={onLogout} 
+          className="btn-icon btn-icon-danger" 
+          title="Đăng xuất"
+          style={{ padding: '0.5rem', borderRadius: 'var(--radius-sm)' }}
+        >
+          <LogOut size={18} />
+        </button>
       </div>
     </aside>
   );
