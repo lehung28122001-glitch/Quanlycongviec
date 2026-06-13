@@ -10,7 +10,8 @@ export default function TaskList({
   onDelete, 
   onOpenModal,
   isFiltered,
-  onResetFilters
+  onResetFilters,
+  onSound,
 }) {
   if (tasks.length === 0) {
     return (
@@ -52,6 +53,7 @@ export default function TaskList({
           onToggleSubtaskComplete={onToggleSubtaskComplete}
           onEdit={onEdit}
           onDelete={onDelete}
+          onSound={onSound}
         />
       ))}
     </div>

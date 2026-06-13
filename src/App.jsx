@@ -5,12 +5,13 @@ import Sidebar from './components/Sidebar';
 import TaskList from './components/TaskList';
 import TaskModal from './components/TaskModal';
 import Confetti from './components/Confetti';
-
 import AuthScreen from './components/AuthScreen';
-
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import Statitics from './components/Statistics';
+import Navbar from './components/Navbar';
+import UserProfile from './components/UserProfile';
+import { useSound } from './hooks/useSound';
 
 
 
@@ -76,6 +77,12 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
     return localStorage.getItem('focustask_currentUser') || '';
   });
+
+  // Sound hook
+  const sound = useSound();
+
+  // Profile panel state
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // Khởi tạo state tasks từ localStorage dựa theo currentUser
   const [tasks, setTasks] = useState(() => {
@@ -358,8 +365,44 @@ export default function App() {
     return <AuthScreen onLoginSuccess={handleLoginSuccess} />;
   }
 
+  // Build user object for Navbar/UserProfile (compatible with both old and new format)
+  const userObj = (() => {
+    try {
+      const users = JSON.parse(localStorage.getItem('focustask_users')) || [];
+      const found = users.find(u =>
+        u.id === currentUser || u.username?.toLowerCase() === currentUser?.toLowerCase()
+      );
+      return found || { username: currentUser, name: currentUser, avatarColor: '#6366f1' };
+    } catch {
+      return { username: currentUser, name: currentUser, avatarColor: '#6366f1' };
+    }
+  })();
+
+  const handleUpdateProfile = (updates) => {
+    try {
+      const users = JSON.parse(localStorage.getItem('focustask_users')) || [];
+      const updated = users.map(u =>
+        (u.id === userObj.id || u.username?.toLowerCase() === currentUser?.toLowerCase())
+          ? { ...u, ...updates }
+          : u
+      );
+      localStorage.setItem('focustask_users', JSON.stringify(updated));
+    } catch (e) {}
+  };
+
   return (
-    <div className="app-layout">
+    <div className="app-wrapper">
+      {/* Top Navigation Bar */}
+      <Navbar
+        theme={theme}
+        toggleTheme={toggleTheme}
+        currentUser={userObj}
+        onLogout={handleLogout}
+        onOpenProfile={() => setIsProfileOpen(true)}
+        tasks={tasks}
+      />
+
+      <div className="app-layout">
       {/* Sidebar chứa Pomodoro và Lọc */}
       <Sidebar
         activeCategory={activeCategory}
@@ -516,8 +559,11 @@ export default function App() {
           onOpenModal={() => { setTaskToEdit(null); setIsModalOpen(true); }}
           isFiltered={isFiltered}
           onResetFilters={handleResetFilters}
+          onSound={sound}
         />
       </main>
+
+      </div>{/* end app-layout */}
 
       {/* Modal chỉnh sửa & thêm công việc */}
       <TaskModal
@@ -529,6 +575,17 @@ export default function App() {
 
       {/* Hiệu ứng pháo hoa khi hoàn thành công việc */}
       <Confetti trigger={confettiTrigger} />
+
+      {/* User Profile Panel */}
+      {isProfileOpen && (
+        <UserProfile
+          currentUser={userObj}
+          tasks={tasks}
+          onUpdateProfile={handleUpdateProfile}
+          onLogout={() => { setIsProfileOpen(false); handleLogout(); }}
+          onClose={() => setIsProfileOpen(false)}
+        />
+      )}
     </div>
   );
 }
