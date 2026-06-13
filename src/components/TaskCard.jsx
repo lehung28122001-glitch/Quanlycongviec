@@ -1,5 +1,5 @@
-import React from 'react';
-import { Check, Edit2, Trash2, Calendar, AlertTriangle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, Edit2, Trash2, Calendar, AlertTriangle, Pin } from 'lucide-react';
 
 const PRIORITY_LABELS = {
   high: 'Cao',
@@ -19,6 +19,14 @@ export default function TaskCard({
   onEdit, 
   onDelete 
 }) {
+  // [HUNG] Tính năng ghim task - thêm bởi nhánh hung
+  const [isPinned, setIsPinned] = useState(task.pinned || false);
+
+  const handleTogglePin = (e) => {
+    e.stopPropagation();
+    setIsPinned(prev => !prev);
+  };
+
   // Đánh giá xem task có quá hạn không
   const checkOverdue = () => {
     if (!task.dueDate || task.completed) return false;
@@ -68,7 +76,7 @@ export default function TaskCard({
   };
 
   return (
-    <div className={`task-card priority-${task.priority} ${task.completed ? 'task-completed' : ''}`}>
+    <div className={`task-card priority-${task.priority} ${task.completed ? 'task-completed' : ''} ${isPinned ? 'task-pinned' : ''}`}>
       <div className="task-header">
         <div className="task-title-group">
           {/* Custom Checkbox */}
@@ -82,7 +90,43 @@ export default function TaskCard({
           </div>
           <span className="task-title">{task.title}</span>
         </div>
+        {/* [HUNG] Nút ghim task */}
+        <button
+          onClick={handleTogglePin}
+          title={isPinned ? 'Bỏ ghim' : 'Ghim task'}
+          style={{
+            border: 'none',
+            background: 'transparent',
+            cursor: 'pointer',
+            color: isPinned ? '#ef4444' : 'var(--text-muted)',
+            padding: '0.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            transition: 'color 0.2s',
+            transform: isPinned ? 'rotate(-45deg)' : 'none',
+          }}
+        >
+          <Pin size={16} fill={isPinned ? '#ef4444' : 'none'} />
+        </button>
       </div>
+
+      {/* [HUNG] Hiển thị nhãn "Đã ghim" nếu task được ghim */}
+      {isPinned && (
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.25rem',
+          padding: '0.15rem 0.5rem',
+          borderRadius: 'var(--radius-full)',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          color: '#ef4444',
+          fontSize: '0.7rem',
+          fontWeight: 600,
+          marginBottom: '0.5rem',
+        }}>
+          <Pin size={10} /> Đã ghim
+        </div>
+      )}
 
       {task.desc && <p className="task-desc">{task.desc}</p>}
 

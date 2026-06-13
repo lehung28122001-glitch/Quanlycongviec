@@ -1,12 +1,13 @@
 import React from 'react';
-import { 
-  CheckSquare, 
-  TrendingUp, 
-  Sun, 
-  Moon, 
-  Layers, 
-  Briefcase, 
-  User
+import {
+  CheckSquare,
+  TrendingUp,
+  Sun,
+  Moon,
+  Layers,
+  Briefcase,
+  User,
+  Bell
 } from 'lucide-react';
 
 const CATEGORIES = [
@@ -15,12 +16,12 @@ const CATEGORIES = [
   { id: 'personal', name: 'Cá nhân', icon: User },
 ];
 
-export default function Sidebar({ 
-  activeCategory, 
-  setActiveCategory, 
-  tasks, 
-  theme, 
-  toggleTheme 
+export default function Sidebar({
+  activeCategory,
+  setActiveCategory,
+  tasks,
+  theme,
+  toggleTheme
 }) {
   // Tính toán số lượng task cho từng category
   const getCategoryCount = (categoryId) => {
@@ -33,19 +34,29 @@ export default function Sidebar({
   const completedTasks = tasks.filter((t) => t.completed).length;
   const completionPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
+  // [HUNG] Tính số task quá hạn để hiển thị cảnh báo
+  const overdueTasks = tasks.filter((t) => {
+    if (!t.dueDate || t.completed) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(t.dueDate);
+    due.setHours(0, 0, 0, 0);
+    return due < today;
+  }).length;
+
   return (
     <aside className="app-sidebar">
       {/* Header Sidebar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ 
-            backgroundColor: 'var(--accent-primary)', 
-            color: 'white', 
-            width: '36px', 
-            height: '36px', 
-            borderRadius: 'var(--radius-sm)', 
-            display: 'flex', 
-            alignItems: 'center', 
+          <div style={{
+            backgroundColor: 'var(--accent-primary)',
+            color: 'white',
+            width: '36px',
+            height: '36px',
+            borderRadius: 'var(--radius-sm)',
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'center',
             boxShadow: '0 4px 10px var(--accent-glow)'
           }}>
@@ -53,11 +64,11 @@ export default function Sidebar({
           </div>
           <h1 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 800 }}>FocusTask</h1>
         </div>
-        
+
         {/* Toggle Theme Button */}
-        <button 
-          onClick={toggleTheme} 
-          className="btn-icon" 
+        <button
+          onClick={toggleTheme}
+          className="btn-icon"
           title={theme === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
           style={{ padding: '0.5rem', borderRadius: 'var(--radius-sm)' }}
         >
@@ -66,11 +77,11 @@ export default function Sidebar({
       </div>
 
       {/* Progress Section */}
-      <div style={{ 
-        padding: '1.25rem', 
-        background: 'rgba(255, 255, 255, 0.01)', 
-        border: '1px solid var(--border-color)', 
-        borderRadius: 'var(--radius-md)' 
+      <div style={{
+        padding: '1.25rem',
+        background: 'rgba(255, 255, 255, 0.01)',
+        border: '1px solid var(--border-color)',
+        borderRadius: 'var(--radius-md)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.8125rem' }}>
           <span style={{ color: 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -79,14 +90,14 @@ export default function Sidebar({
           <span style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>{completionPercent}%</span>
         </div>
         <div style={{ height: '6px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-          <div 
-            style={{ 
-              width: `${completionPercent}%`, 
-              height: '100%', 
-              backgroundColor: 'var(--accent-primary)', 
+          <div
+            style={{
+              width: `${completionPercent}%`,
+              height: '100%',
+              backgroundColor: 'var(--accent-primary)',
               borderRadius: 'var(--radius-full)',
-              transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)' 
-            }} 
+              transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
           />
         </div>
         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontWeight: 500 }}>
@@ -117,6 +128,41 @@ export default function Sidebar({
           })}
         </div>
       </div>
+
+      {/* [HUNG] Thông báo quá hạn - thêm bởi nhánh hung */}
+      {overdueTasks > 0 && (
+        <div style={{
+          padding: '1rem',
+          background: 'rgba(244, 63, 94, 0.08)',
+          border: '1px solid rgba(244, 63, 94, 0.25)',
+          borderRadius: 'var(--radius-md)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+        }}>
+          <div style={{
+            backgroundColor: 'rgba(244, 63, 94, 0.15)',
+            color: '#f43f5e',
+            width: '32px',
+            height: '32px',
+            borderRadius: 'var(--radius-sm)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <Bell size={16} />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#f43f5e' }}>
+              Cảnh báo quá hạn!
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+              Bạn có {overdueTasks} công việc đã quá hạn
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
