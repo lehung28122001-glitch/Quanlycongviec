@@ -1,5 +1,5 @@
-import React from 'react';
-import { Check, Edit2, Trash2, Calendar, AlertTriangle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, Edit2, Trash2, Calendar, AlertTriangle, Star } from 'lucide-react';
 
 const PRIORITY_LABELS = {
   high: 'Cao',
@@ -19,6 +19,14 @@ export default function TaskCard({
   onEdit, 
   onDelete 
 }) {
+  // [MAIN] Tính năng đánh dấu sao - thêm bởi nhánh main
+  const [isStarred, setIsStarred] = useState(task.starred || false);
+
+  const handleToggleStar = (e) => {
+    e.stopPropagation();
+    setIsStarred(prev => !prev);
+  };
+
   // Đánh giá xem task có quá hạn không
   const checkOverdue = () => {
     if (!task.dueDate || task.completed) return false;
@@ -82,6 +90,23 @@ export default function TaskCard({
           </div>
           <span className="task-title">{task.title}</span>
         </div>
+        {/* [MAIN] Nút đánh dấu sao */}
+        <button
+          onClick={handleToggleStar}
+          title={isStarred ? 'Bỏ đánh dấu sao' : 'Đánh dấu sao'}
+          style={{
+            border: 'none',
+            background: 'transparent',
+            cursor: 'pointer',
+            color: isStarred ? '#f59e0b' : 'var(--text-muted)',
+            padding: '0.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            transition: 'color 0.2s',
+          }}
+        >
+          <Star size={16} fill={isStarred ? '#f59e0b' : 'none'} />
+        </button>
       </div>
 
       {task.desc && <p className="task-desc">{task.desc}</p>}
