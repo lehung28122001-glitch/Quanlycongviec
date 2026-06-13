@@ -17,7 +17,8 @@ export default function TaskCard({
   onToggleComplete, 
   onToggleSubtaskComplete, 
   onEdit, 
-  onDelete 
+  onDelete,
+  onSound,
 }) {
   // Đánh giá xem task có quá hạn không
   const checkOverdue = () => {
@@ -54,6 +55,11 @@ export default function TaskCard({
       x: e.clientX,
       y: e.clientY
     };
+    // Play sound based on new state
+    if (onSound) {
+      const willComplete = !task.completed;
+      willComplete ? onSound.playCompleteSound() : onSound.playUncheckedSound();
+    }
     onToggleComplete(task.id, clickCoordinates);
   };
 
@@ -64,6 +70,12 @@ export default function TaskCard({
       x: e.clientX,
       y: e.clientY
     };
+    // Play sound based on subtask new state
+    if (onSound) {
+      const sub = task.subtasks.find((s) => s.id === subtaskId);
+      const willComplete = sub ? !sub.completed : true;
+      willComplete ? onSound.playCompleteSound() : onSound.playUncheckedSound();
+    }
     onToggleSubtaskComplete(task.id, subtaskId, clickCoordinates);
   };
 
