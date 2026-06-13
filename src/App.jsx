@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, ClipboardList, CheckCircle2, Clock, AlertCircle, Sparkles } from 'lucide-react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
@@ -6,9 +6,12 @@ import TaskList from './components/TaskList';
 import TaskModal from './components/TaskModal';
 import Confetti from './components/Confetti';
 
+import AuthScreen from './components/AuthScreen';
+
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import Statitics from './components/Statistics';
+
 
 
 // Một số công việc mẫu để người dùng không cảm thấy ứng dụng trống trải khi mở lần đầu
@@ -69,10 +72,22 @@ const DEFAULT_TASKS = [
 ];
 
 export default function App() {
-  // Khởi tạo state tasks từ localStorage hoặc dùng tasks mẫu
+  // Khởi tạo người dùng hiện tại từ localStorage
+  const [currentUser, setCurrentUser] = useState(() => {
+    return localStorage.getItem('focustask_currentUser') || '';
+  });
+
+  // Khởi tạo state tasks từ localStorage dựa theo currentUser
   const [tasks, setTasks] = useState(() => {
-    const saved = localStorage.getItem('focustask_tasks');
-    return saved ? JSON.parse(saved) : DEFAULT_TASKS;
+    const activeUser = localStorage.getItem('focustask_currentUser');
+    if (activeUser) {
+      const users = JSON.parse(localStorage.getItem('focustask_users')) || [];
+      const user = users.find(u => u.username.toLowerCase() === activeUser.toLowerCase());
+      if (user && user.tasks && user.tasks.length > 0) {
+        return user.tasks;
+      }
+    }
+    return DEFAULT_TASKS;
   });
 
   // Khởi tạo theme (mặc định tối 'dark')
@@ -152,10 +167,6 @@ export default function App() {
     return { success: true };
   };
 
-  const handleLogout = () => {
-    setUser(null);
-  };
-
   // Đồng bộ theme
   useEffect(() => {
     const root = document.documentElement;
@@ -169,10 +180,40 @@ export default function App() {
     localStorage.setItem('focustask_theme', theme);
   }, [theme]);
 
-  // Đồng bộ tasks vào LocalStorage khi có thay đổi
+  // Đồng bộ tasks vào LocalStorage cho user hiện tại khi có thay đổi
   useEffect(() => {
-    localStorage.setItem('focustask_tasks', JSON.stringify(tasks));
-  }, [tasks]);
+    if (currentUser) {
+      const users = JSON.parse(localStorage.getItem('focustask_users')) || [];
+      const updatedUsers = users.map((u) => {
+        if (u.username.toLowerCase() === currentUser.toLowerCase()) {
+          return { ...u, tasks };
+        }
+        return u;
+      });
+      localStorage.setItem('focustask_users', JSON.stringify(updatedUsers));
+    }
+  }, [tasks, currentUser]);
+
+  const handleLoginSuccess = (username) => {
+    setCurrentUser(username);
+    localStorage.setItem('focustask_currentUser', username);
+    
+    const users = JSON.parse(localStorage.getItem('focustask_users')) || [];
+    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    if (user && user.tasks && user.tasks.length > 0) {
+      setTasks(user.tasks);
+    } else {
+      setTasks(DEFAULT_TASKS);
+    }
+  };
+
+  const handleLogout = () => {
+    if (window.confirm('Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này?')) {
+      setCurrentUser('');
+      localStorage.removeItem('focustask_currentUser');
+      setTasks([]);
+    }
+  };
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -312,7 +353,12 @@ export default function App() {
     setSearchQuery('');
   };
 
-  const appLayout = (
+
+  if (!currentUser) {
+    return <AuthScreen onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  return (
     <div className="app-layout">
       {/* Sidebar chứa Pomodoro và Lọc */}
       <Sidebar
@@ -321,6 +367,8 @@ export default function App() {
         tasks={tasks}
         theme={theme}
         toggleTheme={toggleTheme}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* Nội dung chính bên phải */}
@@ -332,7 +380,7 @@ export default function App() {
               Bảng công việc <Sparkles size={22} style={{ color: 'var(--accent-primary)' }} />
             </h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-              Chào {user?.username || 'bạn'}! Quản lý công việc hiệu quả mỗi ngày.
+              Chào {currentUser}! Quản lý công việc hiệu quả mỗi ngày.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -482,15 +530,5 @@ export default function App() {
       {/* Hiệu ứng pháo hoa khi hoàn thành công việc */}
       <Confetti trigger={confettiTrigger} />
     </div>
-  );
-
-  return (
-    <Routes>
-      <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-      <Route path="/register" element={<RegisterPage onRegister={handleRegister} />} />
-      <Route path="/app" element={user ? appLayout : <Navigate replace to="/login" />} />
-      <Route path="/" element={user ? <Navigate replace to="/app" /> : <Navigate replace to="/login" />} />
-      <Route path="*" element={<Navigate replace to={user ? '/app' : '/login'} />} />
-    </Routes>
   );
 }
